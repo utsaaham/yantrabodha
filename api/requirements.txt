@@ -3,3 +3,4 @@ uvicorn
 supabase
 pydantic
 mangum
+python-dotenv
