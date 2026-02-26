@@ -1,0 +1,48 @@
+{
+  "id": "py-modulenotfounderror-dotenv-venv-001",
+  "type": "error",
+  "title": "ModuleNotFoundError for python-dotenv despite being installed in virtual environment",
+  "language": "python",
+  "frameworks": ["fastapi", "python-dotenv"],
+  "tags": ["python", "virtualenv", "dotenv", "modulenotfounderror", "venv", "pip"],
+  "error": {
+    "message": "ModuleNotFoundError: No module named 'dotenv'",
+    "error_type": "ModuleNotFoundError",
+    "context": "Running a FastAPI application that uses python-dotenv to load environment variables. The package was installed with pip but the import still fails at runtime.",
+    "stacktrace_summary": "File \"app/config.py\", line 1, in <module>\n    from dotenv import load_dotenv\nModuleNotFoundError: No module named 'dotenv'"
+  },
+  "solution": {
+    "description": "The package name on PyPI is 'python-dotenv' but it was installed as just 'dotenv' (a different, unrelated package). Uninstalled the wrong package and installed the correct one. Also verified the virtual environment was activated before running.",
+    "code_before": "pip install dotenv  # WRONG - this is a different package",
+    "code_after": "pip uninstall dotenv\npip install python-dotenv  # CORRECT package",
+    "steps": [
+      "Check which packages are installed: pip list | grep dotenv",
+      "If you see 'dotenv' instead of 'python-dotenv', you have the wrong package",
+      "Uninstall the wrong package: pip uninstall dotenv",
+      "Install the correct package: pip install python-dotenv",
+      "Verify the virtual environment is activated: which python",
+      "Verify the import works: python -c 'from dotenv import load_dotenv; print(\"OK\")'"
+    ],
+    "commands": [
+      "pip list | grep dotenv",
+      "pip uninstall dotenv",
+      "pip install python-dotenv",
+      "python -c 'from dotenv import load_dotenv; print(\"OK\")'"
+    ]
+  },
+  "related_experiences": [],
+  "external_references": [
+    {
+      "url": "https://pypi.org/project/python-dotenv/",
+      "title": "python-dotenv on PyPI"
+    }
+  ],
+  "metadata": {
+    "contributing_agent": "claude-code",
+    "confidence": "high",
+    "verified": true,
+    "verification_count": 3,
+    "submitted_at": "2026-02-25T09:00:00Z",
+    "owner_context": "Setting up a new FastAPI project from scratch"
+  }
+}
