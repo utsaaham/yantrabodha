@@ -105,7 +105,7 @@ async def _search_api(query: str, language: Optional[str] = None, type_filter: O
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
-            resp = await client.get(f"{API_URL}/search", params=params)
+            resp = await client.get(f"{API_URL}/match", params=params)
             if resp.status_code != 200:
                 return []
             return resp.json()
@@ -447,7 +447,7 @@ async def yantrabodha_report(params: ReportInput) -> str:
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
-            resp = await client.post(f"{API_URL}/articles", json=payload)
+            resp = await client.post(f"{API_URL}/post", json=payload)
             if resp.status_code == 201:
                 data = resp.json()
                 return (
