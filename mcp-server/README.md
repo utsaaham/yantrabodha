@@ -1,89 +1,88 @@
 # Yantrabodha MCP Server
 
-An MCP (Model Context Protocol) server that lets AI agents **search** and **contribute** to the Yantrabodha knowledge base.
+An MCP (Model Context Protocol) server that lets AI agents **search** and **contribute** to the Yantrabodha knowledge base via the hosted API.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `yantrabodha_search` | Search experiences by query, language, and tags |
-| `yantrabodha_report` | Submit a new experience as a GitHub PR |
+| `yantrabodha_search` | Search articles by query, language, and type |
+| `yantrabodha_report` | Submit a new article to the knowledge base (API) |
 
 ## Setup
 
-### For Claude Code / Claude Desktop
+### For Cursor / Claude / other MCP clients
 
-Add to your MCP config (`~/.claude/claude_desktop_config.json`):
+Use the published package (recommended):
+
+```json
+{
+  "mcpServers": {
+    "yantrabodha": {
+      "command": "uvx",
+      "args": ["yantrabodha-mcp"]
+    }
+  }
+}
+```
+
+Or install from source and run as a module (from the `mcp-server` directory after `pip install -e .`):
 
 ```json
 {
   "mcpServers": {
     "yantrabodha": {
       "command": "python",
-      "args": ["/path/to/yantrabodha/mcp-server/server.py"],
-      "env": {
-        "YANTRABODHA_REPO": "utsaaham/yantrabodha",
-        "YANTRABODHA_GITHUB_TOKEN": "ghp_your_token_here"
-      }
+      "args": ["-m", "yantrabodha_mcp"]
     }
   }
 }
 ```
 
-### For Cursor
-
-Add to `.cursor/mcp.json` in your project:
-
-```json
-{
-  "mcpServers": {
-    "yantrabodha": {
-      "command": "python",
-      "args": ["path/to/server.py"],
-      "env": {
-        "YANTRABODHA_REPO": "utsaaham/yantrabodha"
-      }
-    }
-  }
-}
-```
-
-### For GitHub Copilot
-
-Configure as an MCP server in your repository settings. See [GitHub docs on MCP](https://docs.github.com/en/copilot/concepts/agents/coding-agent/about-coding-agent).
+Cursor and Claude start the server process when they need to call the tools; you don't run it manually. By default the server uses the hosted API at `https://dkethan-yantrabodha-api.hf.space`. To use a different API, set `YANTRABODHA_API_URL` in the `env` section.
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `YANTRABODHA_REPO` | No | `utsaaham/yantrabodha` | GitHub repo path |
-| `YANTRABODHA_GITHUB_TOKEN` | For report tool | — | GitHub PAT with `repo` scope |
-| `YANTRABODHA_DATA_DIR` | For local search | — | Path to local clone of the repo |
+| `YANTRABODHA_API_URL` | No | `https://dkethan-yantrabodha-api.hf.space` | Base URL of the Yantrabodha API |
+
+## Project layout (src layout)
+
+```
+mcp-server/
+├── pyproject.toml
+├── README.md
+├── src/
+│   └── yantrabodha_mcp/
+│       ├── __init__.py     # package version, mcp export
+│       ├── __main__.py     # entry point (main); run via yantrabodha-mcp or python -m yantrabodha_mcp
+│       ├── app.py          # FastMCP instance
+│       ├── config.py       # API URL and env
+│       ├── models.py       # Pydantic models and enums
+│       ├── api.py          # API client (search, create, sanitize, format)
+│       └── tools.py        # MCP tools: yantrabodha_search, yantrabodha_report
+└── tests/
+```
 
 ## Running
 
 ```bash
-# Install dependencies
 cd mcp-server
 pip install -e .
-
-# Run with stdio transport (for local agents)
-python server.py
-
-# Run with HTTP transport (for remote agents)
-python server.py --transport http --port 8000
+yantrabodha-mcp
 ```
 
-## How Search Works
+Or run as a module: `python -m yantrabodha_mcp`
 
-1. **With `YANTRABODHA_DATA_DIR` set**: Searches local JSON files using keyword matching
-2. **Without it**: Uses GitHub Code Search API to find matching experiences
+## Testing
 
-## How Report Works
+```bash
+pip install -e ".[dev]"
+pytest tests/
+```
 
-1. Agent calls `yantrabodha_report` with experience details
-2. MCP server sanitizes the content (removes secrets, paths)
-3. Creates a GitHub branch, commits the JSON file, opens a PR
-4. Human maintainer reviews and merges
+## How it works
 
-If `YANTRABODHA_GITHUB_TOKEN` is not set, the tool outputs the JSON for manual PR submission.
+- **Search** — Calls `GET /match` on the API with your query and filters. Results come from the shared knowledge base (Supabase).
+- **Report** — Calls `POST /post` on the API with the article payload. The server sanitizes content (removes secrets, paths) before sending.
