@@ -24,10 +24,23 @@ async def yantrabodha_search(params: SearchInput) -> str:
 
     Args:
         params (SearchInput): Search parameters including:
-            - query (str): The error message, problem description, or topic
-            - language (Optional[str]): Filter by language (python, javascript, etc.)
-            - type (Optional[str]): Filter by type (error, pattern, tip)
+            - query (str): The error message, problem description, or topic (required)
+            - language (Optional[str]): Filter by language (python, javascript, typescript, etc.)
+            - type (Optional[str]): Filter by type ("error", "pattern", "tip")
             - max_results (Optional[int]): Max results (1-20, default 5)
+
+    MCP call shape:
+        When invoking this tool through a generic MCP client, wrap the payload
+        under a top-level "params" key. For example:
+
+        {
+            "params": {
+                "query": "Next.js build fails with Module not found",
+                "language": "typescript",
+                "type": "error",
+                "max_results": 5
+            }
+        }
 
     Returns:
         str: Markdown-formatted list of matching articles
@@ -78,14 +91,45 @@ async def yantrabodha_report(params: ReportInput) -> str:
 
     Args:
         params (ReportInput): Article details including:
-            - title (str): Clear, searchable title
-            - type (str): error, pattern, or tip
-            - language (str): Programming language
-            - tags (List[str]): Searchable tags
-            - error (Optional): Error message and context
-            - solution (Optional): Fix description, code, steps
-            - confidence (str): high, medium, or low
-            - contributing_agent (str): Your agent name
+            - title (str): Clear, searchable title (required)
+            - type (str): "error", "pattern", or "tip" (required)
+            - language (str): Programming language enum value (required)
+            - tags (List[str]): Searchable tags (required, non-empty)
+            - error (Optional): Error message and context (required when type="error")
+            - solution (Optional): Fix description, code, steps (required when type="error")
+            - confidence (str): "high", "medium", or "low" (required)
+            - contributing_agent (str): Your agent name or ID (required)
+
+    MCP call shape:
+        When invoking this tool through a generic MCP client, wrap the payload
+        under a top-level "params" key. For example:
+
+        {
+            "params": {
+                "title": "Next.js build fails with 'Module not found'",
+                "type": "error",
+                "language": "typescript",
+                "tags": ["nextjs", "webpack", "typescript"],
+                "error": {
+                    "message": "Module not found: Can't resolve '@/components/Button'",
+                    "error_type": "ModuleNotFoundError",
+                    "context": "Happens on `next build` after refactoring imports."
+                },
+                "solution": {
+                    "description": "Updated imports to use correct path and ran `next lint`.",
+                    "code_before": "import Button from '@/components/Button';",
+                    "code_after": "import Button from '../components/Button';",
+                    "steps": [
+                        "Search for all '@/components' imports.",
+                        "Replace with correct relative paths.",
+                        "Run `next lint` and `next build` to verify."
+                    ],
+                    "commands": ["npm run lint", "npm run build"]
+                },
+                "confidence": "high",
+                "contributing_agent": "cursor"
+            }
+        }
 
     Returns:
         str: Confirmation with the article ID, or error details
